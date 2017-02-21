@@ -5,7 +5,7 @@
         <title>:D</title>
         <script src="https://cdn.jsdelivr.net/phaser/2.5.0/phaser.min.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/3.5.3/math.min.js"></script>
-        <script src="https://cdn.rawgit.com/nicolewhite/algebra.js/gh-pages/javascripts/algebra-0.2.5.min.js"></script>
+        <script src="http://algebra.js.org/javascripts/algebra-0.2.6.min.js"></script>
     </head>
     <body>
 
@@ -13,29 +13,85 @@
 
     window.onload = function() {
         var game = new Phaser.Game(445, 475, Phaser.AUTO, '', { preload: preload, create: create });
-        
-        function preload () {
-            parser = math.parser();
-			math.import({
-				solve: function (expression, solvefor) {
-					var ex1 = algebra.parse(expression.toString().split("=")[0]);
-					var ex2 = algebra.parse(expression.toString().split("=")[1]);
-					var eq = new algebra.Equation(ex1, ex2);
-					return eq.solveFor(solvefor);
-				},
-				about: function () {
-					return "twenty1";
-				}
-			});
-        }
 
         var key1, key2, key3, key4, key5, key6, key7, key8, key9, key0;
         var keyplus, keyminus, keytimes, keydivide, keyequal;
         var keya, keyb, keyc, keyd, keye, keyf, keyg, keyh, keyi, keyj, keyk, keyl, keym, keyn, keyo, keyp, keyq, keyr, keys, keyt, keyu, keyv, keyw, keyx, keyy, keyz;
         var keybackspace, keydelete, keyspace;
         var cursorPos;
+        var selectSprite;
         var equString = "";
+        var graphEquString = "";
+        var graphWL = 10;
+        var graphWH = 10;
         var inputBox = [];
+        var history = [];
+        var graphBoxes = [];
+        
+        function preload () {
+            parser = math.parser();
+			math.import({
+				solve: function (expression, solvefor) {
+				    try {
+					    var ex1 = algebra.parse(expression.toString().split("=")[0]);
+					    var ex2 = algebra.parse(expression.toString().split("=")[1]);
+					    alert ("EX1 " + ex1 + " EX2 " + ex2);
+					    var eq = new algebra.Equation(ex1, ex2);
+					    return eq.solveFor(solvefor);
+				    } catch (ex) {alert(ex.message);}
+				    return null;
+				},
+				graph: function (expression) {
+				    graphEquString = expression;
+				    for (var i = 0; i < history.length; i++) {
+				        for (var j = 0; j < history[i].length; j++) {
+				            history[i][j].destroy();
+				        }
+				    }
+				    for (var i = 0; i < graphBoxes.length; i++) {
+				        graphBoxes[i].destroy();
+				    }
+                    for (var i = 0; i < 87; i++) {
+                        graphBoxes[i] = game.add.sprite((i*5+5),Math.round((parser.eval(expression.replace(/x/g, i/graphWL))*(graphWH*-5)+232)/5)*5, 'digitpixel');
+                    }
+				    
+					return "done";
+				},
+				addGraphPixelAt: function (x,y,color) {
+                    graphBoxes[graphBoxes-1] = game.add.sprite((x*5+5),(y*5+5), 'digitpixel' + color);
+				},
+				clearAllPixels: function () {
+				    for (var i = 0; i < graphBoxes.length; i++) {
+				        graphBoxes[i].destroy();
+				    }
+				},
+				playsnake: function () {
+				    math.addGraphPixelAt(0,0,"red");
+				    math.addGraphPixelAt(0,1,"red");
+				    math.addGraphPixelAt(0,2,"red");
+				    math.addGraphPixelAt(0,3,"red");
+				    math.addGraphPixelAt(0,4,"red");
+				},
+				clear: function () {
+				    for (var i = 0; i < history.length; i++) {
+				        for (var j = 0; j < history[i].length; j++) {
+				            history[i][j].destroy();
+				        }
+				    }
+				    for (var i = 0; i < inputBox.length; i++) {
+                        inputBox[i].destroy();
+                    }
+                    inputBox.splice(0, inputBox.length);
+                    equString = "";
+                    cursorPos = 0;
+                    selectSprite.x = (cursorPos)*5+5;
+				},
+				about: function () {
+					return "twenty1";
+				}
+			});
+        }
+        
         function addNewCharacter(character) {
             switch (character) {
                 case "0":
@@ -74,6 +130,12 @@
                 case ")":
                     inputBox.push(game.add.sprite((cursorPos+1)*5, 86*5, 'digitpl'));
                     break;
+                case "[":
+                    inputBox.push(game.add.sprite((cursorPos+1)*5, 86*5, 'digitsf'));
+                    break;
+                case "]":
+                    inputBox.push(game.add.sprite((cursorPos+1)*5, 86*5, 'digitsl'));
+                    break;
                 case ".":
                     inputBox.push(game.add.sprite((cursorPos+1)*5, 86*5, 'digitdecimal'));
                     break;
@@ -88,6 +150,9 @@
                     break;
                 case "/":
                     inputBox.push(game.add.sprite((cursorPos+1)*5, 86*5, 'digitdivide'));
+                    break;
+                case "^":
+                    inputBox.push(game.add.sprite((cursorPos+1)*5, 86*5, 'digitcarrot'));
                     break;
                 case "a":
                     inputBox.push(game.add.sprite((cursorPos+1)*5, 86*5, 'digita'));
@@ -167,15 +232,25 @@
                 case "z":
                     inputBox.push(game.add.sprite((cursorPos+1)*5, 86*5, 'digitz'));
                     break;
+                case "\"":
+                    inputBox.push(game.add.sprite((cursorPos+1)*5, 86*5, 'digitdq'));
+                    break;
                 case "=":
                     inputBox.push(game.add.sprite((cursorPos+1)*5, 86*5, 'digitequal'));
                     break;
                 case ",":
                     inputBox.push(game.add.sprite((cursorPos+1)*5, 86*5, 'digitcomma'));
                     break;
+                case "%":
+                    inputBox.push(game.add.sprite((cursorPos+1)*5, 86*5, 'digitpercent'));
+                    break;
+                case " ":
+                    inputBox.push(game.add.sprite((cursorPos+1)*5, 86*5, 'digitspace'));
+                    break;
             }
             equString = equString + character;
             cursorPos = cursorPos + 4;
+            selectSprite.x = (cursorPos)*5+5;
         }
         function create() {
             ///
@@ -265,6 +340,20 @@
                 '.5.',
                 '5..',
             ];
+            var fontsf = [
+                '.55',
+                '.5.',
+                '.5.',
+                '.5.',
+                '.55',
+            ];
+            var fontsl = [
+                '55.',
+                '.5.',
+                '.5.',
+                '.5.',
+                '55.',
+            ];
             var fontdecimal = [
                 '...',
                 '...',
@@ -300,6 +389,13 @@
                 '5..',
                 '...',
             ];
+            var fontcarrot = [
+                '.5.',
+                '5.5',
+                '...',
+                '...',
+                '...',
+            ];
             var fontequal = [
                 '...',
                 '555',
@@ -313,6 +409,13 @@
                 '...',
                 '.5.',
                 '5..',
+            ];
+            var fontpercent = [
+                '5..',
+                '..5',
+                '.5.',
+                '5..',
+                '..5',
             ];
             var fontspace = [
                 '...',
@@ -504,14 +607,83 @@
                 '5..',
                 '555',
             ];
+            var fontdq = [
+                '...',
+                '5.5',
+                '5.5',
+                '...',
+                '...',
+            ];
+            var fontAS = [
+                '555',
+                '555',
+                '555',
+                '555',
+                '555',
+            ];
+            var fontNS = [
+                '...',
+                '...',
+                '...',
+                '...',
+                '...',
+            ];
+            var fontpixel = [
+                '5'
+            ];
+            var fontgrey = [
+                '1'
+            ];
+            var fontwhite = [
+                '2'
+            ];
+            var fontred = [
+                '3'
+            ];
+            var fontpink = [
+                '4'
+            ];
+            var fontdarkbrown = [
+                '5'
+            ];
+            var fontlightbrown = [
+                '6'
+            ];
+            var fontorange = [
+                '7'
+            ];
+            var fontyellow = [
+                '8'
+            ];
+            var fontdarkgreen = [
+                '9'
+            ];
+            var fontlightgreen = [
+                'A'
+            ];
+            var fontlime = [
+                'B'
+            ];
+            var fontdarkblue = [
+                'C'
+            ];
+            var fontmediumblue = [
+                'D'
+            ];
+            var fontblue = [
+                'E'
+            ];
+            var fontlightblue = [
+                'F'
+            ];
             var workspace = [
 				'123456789ABCDEF123456789ABCDEF123456789ABCDEF123456789ABCDEF123456789ABCDEF123456789ABCDE',
 				'1.......................................................................................1',
-				'1............................789.B...F.234.6..9.BCD.F.2...6.............................1',
-				'1.............................8..B...F.2...67.9..C..F.2..56.............................1',
-				'1.............................8..B...F.23..6.89..C...1....6.............................1',
-				'1.............................8..B.D.F.2...6..9..C...1....6.............................1',
-				'1.............................8...C.E..234.6..9..C...1...567............................1',
+				'1.......................................................................................1',
+				'1.......................................................................................1',
+				'1.......................................................................................1',
+				'1.......................................................................................1',
+				'1.......................................................................................1',
 				'1.......................................................................................1',
 				'1.......................................................................................1',
 				'1.......................................................................................1',
@@ -615,12 +787,16 @@
             game.create.texture('digit0', font0, 5, 5);
             game.create.texture('digitpf', fontpf, 5, 5);
             game.create.texture('digitpl', fontpl, 5, 5);
+            game.create.texture('digitsf', fontsf, 5, 5);
+            game.create.texture('digitsl', fontsl, 5, 5);
             game.create.texture('digitdecimal', fontdecimal, 5, 5);
             game.create.texture('digitcomma', fontcomma, 5, 5);
+            game.create.texture('digitpercent', fontpercent, 5, 5);
             game.create.texture('digitplus', fontplus, 5, 5);
             game.create.texture('digitminus', fontminus, 5, 5);
             game.create.texture('digittimes', fonttimes, 5, 5);
             game.create.texture('digitdivide', fontdivide, 5, 5);
+            game.create.texture('digitcarrot', fontcarrot, 5, 5);
             game.create.texture('digitequal', fontequal, 5, 5);
             game.create.texture('digitspace', fontspace, 5, 5);
             game.create.texture('digita', fonta, 5, 5);
@@ -649,6 +825,25 @@
             game.create.texture('digitx', fontx, 5, 5);
             game.create.texture('digity', fonty, 5, 5);
             game.create.texture('digitz', fontz, 5, 5);
+            game.create.texture('digitdq', fontdq, 5, 5);
+            game.create.texture('digitpixel', fontpixel, 5, 5);
+            game.create.texture('digitgrey', fontgrey, 5, 5);
+            game.create.texture('digitwhite', fontwhite, 5, 5);
+            game.create.texture('digitred', fontred, 5, 5);
+            game.create.texture('digitpink', fontpink, 5, 5);
+            game.create.texture('digitdarkbrown', fontdarkbrown, 5, 5);
+            game.create.texture('digitlightbrown', fontlightbrown, 5, 5);
+            game.create.texture('digitorange', fontorange, 5, 5);
+            game.create.texture('digityellow', fontyellow, 5, 5);
+            game.create.texture('digitdarkgreen', fontdarkgreen, 5, 5);
+            game.create.texture('digitlightgreen', fontlightgreen, 5, 5);
+            game.create.texture('digitlime', fontlime, 5, 5);
+            game.create.texture('digitdarkblue', fontdarkblue, 5, 5);
+            game.create.texture('digitmediumblue', fontmediumblue, 5, 5);
+            game.create.texture('digitblue', fontblue, 5, 5);
+            game.create.texture('digitlightblue', fontlightblue, 5, 5);
+            game.create.texture('digitns', fontNS, 5, 5);
+            game.create.texture('digitas', fontAS, 5, 5);
             game.add.sprite(0, 0, 'workspace');
             
             keyshift = game.input.keyboard.addKey(Phaser.Keyboard.SHIFT);
@@ -674,6 +869,8 @@
             keybackspace = game.input.keyboard.addKey(Phaser.Keyboard.BACKSPACE);
             keydelete = game.input.keyboard.addKey(Phaser.Keyboard.DELETE);
             keyspace = game.input.keyboard.addKey(Phaser.Keyboard.SPACEBAR);
+            keysf = game.input.keyboard.addKey(Phaser.Keyboard.OPEN_BRACKET);
+            keysl = game.input.keyboard.addKey(Phaser.Keyboard.CLOSED_BRACKET);
             keya = game.input.keyboard.addKey(Phaser.Keyboard.A);
             keyb = game.input.keyboard.addKey(Phaser.Keyboard.B);
             keyc = game.input.keyboard.addKey(Phaser.Keyboard.C);
@@ -700,6 +897,11 @@
             keyx = game.input.keyboard.addKey(Phaser.Keyboard.X);
             keyy = game.input.keyboard.addKey(Phaser.Keyboard.Y);
             keyz = game.input.keyboard.addKey(Phaser.Keyboard.Z);
+            keydq = game.input.keyboard.addKey(Phaser.Keyboard.QUOTES);
+            keyleft = game.input.keyboard.addKey(Phaser.Keyboard.LEFT);
+            keyright = game.input.keyboard.addKey(Phaser.Keyboard.RIGHT);
+            keyup = game.input.keyboard.addKey(Phaser.Keyboard.UP);
+            keydown = game.input.keyboard.addKey(Phaser.Keyboard.DOWN);
             
             key0.onDown.add(function(key){
             	if (!(keyshift.isDown)) {
@@ -721,10 +923,18 @@
                 addNewCharacter("4");
             }, this);
             key5.onDown.add(function(key){
-                addNewCharacter("5");
+                if (!(keyshift.isDown)) {
+                    addNewCharacter("5");
+            	} else {
+            	    addNewCharacter("%");
+            	}
             }, this);
             key6.onDown.add(function(key){
-                addNewCharacter("6");
+            	if (!(keyshift.isDown)) {
+                    addNewCharacter("6");
+            	} else {
+            	    addNewCharacter("^");
+            	}
             }, this);
             key7.onDown.add(function(key){
                 addNewCharacter("7");
@@ -739,6 +949,16 @@
                 	addNewCharacter("9");
                 } else {
                 	addNewCharacter("(");
+                }
+            }, this);
+            keysf.onDown.add(function(key){
+            	if (!(keyshift.isDown)) {
+                	addNewCharacter("[");
+                }
+            }, this);
+            keysl.onDown.add(function(key){
+            	if (!(keyshift.isDown)) {
+                	addNewCharacter("]");
                 }
             }, this);
             keydecimal.onDown.add(function(key){
@@ -828,6 +1048,9 @@
             keyz.onDown.add(function(key){
                 addNewCharacter("z");
             }, this);
+            keydq.onDown.add(function(key){
+                addNewCharacter("\"");
+            }, this);
             keyplus.onDown.add(function(key){
                 if (keyshift.isDown) {
                     addNewCharacter("+");
@@ -845,10 +1068,14 @@
                 addNewCharacter("/");
             }, this);
             keyenter.onDown.add(function(key){
+                graphEquString = "";
+			    for (var i = 0; i < graphBoxes.length; i++) {
+			        graphBoxes[i].destroy();
+			    }
                 if (equString == "9+10") {
                     var answer = "twenty1";
                 } else {
-					var answer = parser.eval(equString.replace(/solve\((.*),/g, "solve\(\"$1\",").replace(/,(.*)\)/g, ",\"$1\")")).toString();
+					var answer = parser.eval(equString.replace(/solve\((.*),/g, "solve\(\"$1\",").replace(/,(.*)\)/g, ",\"$1\")").replace(/\[/g,"(").replace(/\]/g,")")).toString();
                 }
                 addNewCharacter("=");
                 for (var i = 0; i < answer.length; i++) {
@@ -857,6 +1084,31 @@
 				if (equString.length > 22) {
 					alert(answer);
 				}
+				var historyLength = history.length;
+                history[historyLength] = [];
+				for (var i = 0; i < inputBox.length; i++) {
+                    var sprite = inputBox[i];
+                    history[historyLength][i] = game.add.sprite(sprite.x, sprite.y, sprite.key, sprite.frame);
+		        }
+				for (var i = 0; i < history.length; i++) {
+				    //if (i > history.length - 9) {
+				        for (var j = 0; j < history[i].length; j++) {
+				            history[i][j].y -= 30;
+				        }
+				    //} else {
+				        //for (var j = 0; j < history[i].length; j++) {
+				            //history[i][j].destory();
+				        //}
+				    //}
+				}
+                
+                for (var i = 0; i < inputBox.length; i++) {
+                    inputBox[i].destroy();
+                }
+                inputBox.splice(0, inputBox.length);
+                equString = "";
+                cursorPos = 0;
+                selectSprite.x = (cursorPos)*5+5;
             }, this);
             keyequal.onDown.add(function(key){
                 if (!(keyshift.isDown)) {
@@ -870,6 +1122,7 @@
                 inputBox.splice(0, inputBox.length);
                 equString = "";
                 cursorPos = 0;
+                selectSprite.x = (cursorPos)*5+5;
             }, this);
             keybackspace.onDown.add(function(key){
 				if (inputBox.length > 0) {
@@ -877,8 +1130,34 @@
 					inputBox.splice(inputBox.length-1, 1);
 					equString = equString.substring(0, equString.length - 1);
 					cursorPos = cursorPos - 4;
+                    selectSprite.x = (cursorPos)*5+5;
 				}
             }, this);
+            keyleft.onDown.add(function(key){
+                if (graphEquString !== "") {
+                    graphWL--;
+                    parser.eval("graph(\"" + graphEquString + "\")");
+                }
+            }, this);
+            keyright.onDown.add(function(key){
+                if (graphEquString !== "") {
+                    graphWL++;
+                    parser.eval("graph(\"" + graphEquString + "\")");
+                }
+            }, this);
+            keyup.onDown.add(function(key){
+                if (graphEquString !== "") {
+                    graphWH++;
+                    parser.eval("graph(\"" + graphEquString + "\")");
+                }
+            }, this);
+            keydown.onDown.add(function(key){
+                if (graphEquString !== "") {
+                    graphWH--;
+                    parser.eval("graph(\"" + graphEquString + "\")");
+                }
+            }, this);
+            selectSprite = game.add.sprite((cursorPos)*5+5, 86*5, 'digitas');
         }
     };
     </script>
